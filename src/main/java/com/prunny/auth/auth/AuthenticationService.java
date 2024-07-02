@@ -1,10 +1,10 @@
 package com.prunny.auth.auth;
 
-import com.example.demo.exception.AlreadyExistsException;
-import com.example.demo.repository.UserRepository;
-import com.example.demo.service.JwtService;
-import com.example.demo.user.Role;
-import com.example.demo.user.User;
+import com.prunny.auth.exception.AlreadyExistsException;
+import com.prunny.auth.repository.UserRepository;
+import com.prunny.auth.service.JwtService;
+import com.prunny.auth.user.Role;
+import com.prunny.auth.user.User;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.annotations.NotFound;
 import org.springframework.security.authentication.AuthenticationManager;
