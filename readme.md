@@ -1,7 +1,7 @@
 # 2. User Authentication and Authorization System
 
 ## Overview
-This project implements a RESTful API a user authentication and authorization system using Spring Boot and Spring Security. It is utilizes a relational database(postgres) for data storage.
+This project implements a user authentication and authorization system using Spring Boot and Spring Security. It is utilizes a relational database(postgres) for data storage.
 ## Table of Contents
 - [Setup Instructions](#setup-instructions)
 - [API Endpoints](#api-endpoints)
@@ -34,9 +34,13 @@ Use the JDBC URL jdbc:postgresql://localhost:5432/PrunnySecurityDB to connect. U
 
 API Endpoints
 
+Admin Registration
+Endpoint: POST /api/v1/auth/register-admin
+Description: Registers the Admin.
+
 User Registration
 Endpoint: POST /api/v1/auth/register
-Description: Registers the user.
+Description: Register as a user.
 
 Login
 Endpoint: POST api/v1/auth/authenticate
