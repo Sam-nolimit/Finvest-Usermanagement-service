@@ -29,7 +29,6 @@ Copy code
 The application will be accessible at http://localhost:8080.
 
 Access postgres Database Console:
-The postgres database console is available at http://localhost:8080/PrunnySecurityDB.
 Use the JDBC URL jdbc:postgresql://localhost:5432/PrunnySecurityDB to connect. Update the values in application.properties accordingly.
 
 API Endpoints
