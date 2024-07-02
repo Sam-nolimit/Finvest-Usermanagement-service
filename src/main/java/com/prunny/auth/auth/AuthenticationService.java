@@ -125,6 +125,7 @@ public class AuthenticationService {
         return m.matches();
     }
 
+
     private boolean existsByMail(String email) {
         return repository.existsByEmail(email);
     }
