@@ -1,6 +1,8 @@
 package com.prunny.auth.auth;
 
 import com.prunny.auth.exception.AlreadyExistsException;
+import com.prunny.auth.exception.AuthenticationFailedException;
+import com.prunny.auth.exception.BadRequestException;
 import com.prunny.auth.exception.PasswordIncorrect;
 import com.prunny.auth.repository.UserRepository;
 import com.prunny.auth.service.JwtService;
@@ -8,12 +10,16 @@ import com.prunny.auth.user.Role;
 import com.prunny.auth.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +33,13 @@ public class AuthenticationService {
         Optional<User> existingUser = repository.findByEmail(request.getEmail());
         if (existingUser.isPresent()) {
             throw new AlreadyExistsException("This Email already exists");
+        }
+        if(!isValidEmail(request.getEmail())){
+            throw new BadRequestException("Error: Email must be valid");
+        }
+
+        if(request.getPassword().length() < 8  ){
+            throw new BadRequestException("Password is too short, should be minimum of 8 character long");
         }
 
         var user = User.builder()
@@ -51,6 +64,14 @@ public class AuthenticationService {
             throw new AlreadyExistsException("This Email already exists");
         }
 
+        if(!isValidEmail(request.getEmail())){
+            throw new BadRequestException("Error: Email must be valid");
+        }
+
+        if(request.getPassword().length() < 8  ){
+            throw new BadRequestException("Password is too short, should be minimum of 8 character long");
+        }
+
         var user = User.builder()
                 .firstname(request.getFirstname())
                 .lastname(request.getLastname())
@@ -67,23 +88,44 @@ public class AuthenticationService {
                 .build();
     }
 
-    public AuthenticationResponse authenticate(AuthenticationRequest request) throws PasswordIncorrect {
+    public AuthenticationResponse authenticate(AuthenticationRequest request) throws PasswordIncorrect, AuthenticationFailedException {
+        var user = repository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
         try {
-            authenticationManager.authenticate(
+            Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getEmail(),
                             request.getPassword()
                     )
             );
+            if (!authentication.isAuthenticated()) {
+                throw new AuthenticationFailedException("Wrong email or password");
+            }
         } catch (Exception e) {
-            throw new PasswordIncorrect("The password is incorrect");
+            // Ensure that if an authentication error occurs, it's a password issue, not a user not found issue.
+            throw new PasswordIncorrect("The password is incorrect ");
         }
 
-        var user = repository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         var jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
+    }
+
+    private boolean isValidEmail(String email) {
+        String regex = "^[\\w!#$%&'*+/=?`{|}~^-]+(?:\\.[\\w!#$%&'*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$";
+
+        // Compile the ReGex
+        Pattern p = Pattern.compile(regex);
+        if (email == null) {
+            throw new BadRequestException("Error: Email cannot be null");
+        }
+        Matcher m = p.matcher(email);
+        return m.matches();
+    }
+
+    private boolean existsByMail(String email) {
+        return repository.existsByEmail(email);
     }
 }
