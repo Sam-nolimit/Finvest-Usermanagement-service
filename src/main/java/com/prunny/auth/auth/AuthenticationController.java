@@ -1,5 +1,6 @@
 package com.prunny.auth.auth;
 
+import com.prunny.auth.exception.PasswordIncorrect;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +32,7 @@ public class AuthenticationController {
     @PostMapping("/authenticate")
     public ResponseEntity<AuthenticationResponse> authenticate(
             @RequestBody AuthenticationRequest request
-    ) {
+    ) throws PasswordIncorrect {
         return ResponseEntity.ok(service.authenticate(request));
     }
 

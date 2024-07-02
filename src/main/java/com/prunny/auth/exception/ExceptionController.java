@@ -14,6 +14,16 @@ public class ExceptionController extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(PasswordIncorrect.class)
+    public ResponseEntity<?> PasswordIncorrect(PasswordIncorrect ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<?> UsernameNotFoundException(UsernameNotFoundException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
+    }
+
 //    @ExceptionHandler(PasswordIncorrect.class)
 //    public ResponseEntity<?> PasswordIncorrect(PasswordIncorrect ex) {
 //        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.CONFLICT);

@@ -1,14 +1,15 @@
 package com.prunny.auth.auth;
 
 import com.prunny.auth.exception.AlreadyExistsException;
+import com.prunny.auth.exception.PasswordIncorrect;
 import com.prunny.auth.repository.UserRepository;
 import com.prunny.auth.service.JwtService;
 import com.prunny.auth.user.Role;
 import com.prunny.auth.user.User;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.annotations.NotFound;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,8 +25,8 @@ public class AuthenticationService {
 
     public AuthenticationResponse register(RegisterRequest request) {
         Optional<User> existingUser = repository.findByEmail(request.getEmail());
-        if(existingUser.isPresent()){
-            throw new AlreadyExistsException("This Email already exist");
+        if (existingUser.isPresent()) {
+            throw new AlreadyExistsException("This Email already exists");
         }
 
         var user = User.builder()
@@ -46,8 +47,8 @@ public class AuthenticationService {
 
     public AuthenticationResponse registerAdmin(RegisterAdminRequest request) {
         Optional<User> existingUser = repository.findByEmail(request.getEmail());
-        if(existingUser.isPresent()){
-            throw new AlreadyExistsException("This Email already exist");
+        if (existingUser.isPresent()) {
+            throw new AlreadyExistsException("This Email already exists");
         }
 
         var user = User.builder()
@@ -65,19 +66,24 @@ public class AuthenticationService {
                 .token(jwtToken)
                 .build();
     }
-    public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+
+    public AuthenticationResponse authenticate(AuthenticationRequest request) throws PasswordIncorrect {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
+        } catch (Exception e) {
+            throw new PasswordIncorrect("The password is incorrect");
+        }
+
         var user = repository.findByEmail(request.getEmail())
-                .orElseThrow();
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         var jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
-
     }
 }
