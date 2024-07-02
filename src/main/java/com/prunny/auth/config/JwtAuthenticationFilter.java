@@ -1,6 +1,6 @@
 package com.prunny.auth.config;
 
-import com.example.demo.service.JwtService;
+import com.prunny.auth.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

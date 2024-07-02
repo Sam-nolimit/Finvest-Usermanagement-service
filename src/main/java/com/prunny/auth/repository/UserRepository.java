@@ -1,6 +1,6 @@
 package com.prunny.auth.repository;
 
-import com.example.demo.user.User;
+import com.prunny.auth.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
