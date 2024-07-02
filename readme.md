@@ -34,10 +34,6 @@ Use the JDBC URL jdbc:postgresql://localhost:5432/PrunnySecurityDB to connect. U
 
 API Endpoints
 
-Admin Registration
-Endpoint: POST /api/v1/users/admin
-Description: Registers the admin.
-
 User Registration
 Endpoint: POST /api/v1/auth/register
 Description: Registers the user.
