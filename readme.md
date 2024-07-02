@@ -55,9 +55,9 @@ API documentation is crucial for developers and users to understand how to inter
 
 Error Handling
 Proper error handling is implemented throughout the API. The application returns appropriate HTTP status codes and error messages to indicate the result of each request.
-SP
 
-SRING BOOT DEVELOPER PROJECT ASSESSMENT
+
+SPRING BOOT DEVELOPER PROJECT ASSESSMENT
 
 2. User Authentication and Authorization System
 Project Description: Develop a user authentication and authorization system using Spring
