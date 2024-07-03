@@ -1,9 +1,6 @@
 package com.prunny.auth.auth;
 
-import com.prunny.auth.exception.AlreadyExistsException;
-import com.prunny.auth.exception.AuthenticationFailedException;
-import com.prunny.auth.exception.BadRequestException;
-import com.prunny.auth.exception.PasswordIncorrect;
+import com.prunny.auth.exception.*;
 import com.prunny.auth.repository.UserRepository;
 import com.prunny.auth.service.JwtService;
 import com.prunny.auth.user.Role;
@@ -13,7 +10,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -90,7 +86,7 @@ public class AuthenticationService {
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) throws PasswordIncorrect, AuthenticationFailedException {
         var user = repository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found/does not exist"));
 
         try {
             Authentication authentication = authenticationManager.authenticate(
