@@ -138,7 +138,7 @@ public class AuthenticationService {
             }
         } catch (BadCredentialsException e) {
             // Ensure that if an authentication error occurs, it's a password issue, not a user not found issue.
-            throw new AuthenticationFailedException("The password is incorrect");
+            throw new AuthenticationFailedException("The email or password is incorrect");
         }
 
         var jwtToken = jwtService.generateToken(user);
