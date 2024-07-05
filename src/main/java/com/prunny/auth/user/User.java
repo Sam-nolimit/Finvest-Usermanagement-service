@@ -29,6 +29,7 @@ public class User implements UserDetails {
 
     private String stateoforigin;
 
+    @Column(name = "bvn",  unique = true)
     private String bvn;
 
     @Column(name = "email", nullable = false, unique = true)

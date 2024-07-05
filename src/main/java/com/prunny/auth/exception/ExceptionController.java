@@ -20,6 +20,11 @@ public class ExceptionController extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(BvnExistsException.class)
+    public ResponseEntity<?> BvnExistsException(BvnExistsException ex) {
+        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.CONFLICT);
+    }
+
     private Map<String, List<String>> getErrorsMap(List<String> errors) {
         Map<String, List<String>> errorResponse = new HashMap<>();
         errorResponse.put("Errors", errors);
@@ -43,6 +48,6 @@ public class ExceptionController extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<?> BadRequestException(BadRequestException ex) {
-        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.FORBIDDEN);
     }
 }

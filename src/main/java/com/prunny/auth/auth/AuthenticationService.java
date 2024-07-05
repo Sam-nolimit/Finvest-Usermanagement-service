@@ -14,8 +14,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -25,58 +23,49 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-//    public AuthenticationResponse register(RegisterRequest request) {
-//        Optional<User> existingUser = repository.findByEmail(request.getEmail());
-//        if (existingUser.isPresent()) {
-//            throw new AlreadyExistsException("This Email already exists");
-//        }
-//        if(!isValidEmail(request.getEmail())){
-//            throw new BadRequestException("Error: Email must be valid");
-//        }
-//
-//        if(request.getPassword().length() < 8  ){
-//            throw new BadRequestException("Password is too short, should be minimum of 8 character long");
-//        }
-//
-//        var user = User.builder()
-//                .firstname(request.getFirstname())
-//                .lastname(request.getLastname())
-//                .email(request.getEmail())
-//                .password(passwordEncoder.encode(request.getPassword()))
-//                .stateoforigin(request.getStateoforigin())
-//                .bvn(request.getBvn())
-//                .role(Role.USER)
-//                .build();
-//        repository.save(user);
-//        var jwtToken = jwtService.generateToken(user);
-//        return AuthenticationResponse.builder()
-//                .token(jwtToken)
-//                .build();
-//    }
-
     public AuthenticationResponse register(RegisterRequest request) {
-        validateEmail(request.getEmail());
-        validatePassword(request.getPassword());
+        try {
+            validateEmail(request.getEmail());
+            validatePassword(request.getPassword());
+            validateBvn(request.getBvn());
 
-        Optional<User> existingUser = repository.findByEmail(request.getEmail());
-        if (existingUser.isPresent()) {
-            throw new AlreadyExistsException("This Email already exists");
+            Optional<User> existingUser = repository.findByEmail(request.getEmail());
+            Optional<User> existingBvn = repository.findByBvn(request.getBvn());
+
+            if (existingBvn.isPresent()) {
+                throw new BvnExistsException("This BVN already exists");
+            }
+
+            if (existingUser.isPresent()) {
+                throw new AlreadyExistsException("This Email already exists");
+            }
+
+            var user = User.builder()
+                    .firstname(request.getFirstname())
+                    .lastname(request.getLastname())
+                    .email(request.getEmail())
+                    .password(passwordEncoder.encode(request.getPassword()))
+                    .stateoforigin(request.getStateoforigin())
+                    .bvn(request.getBvn())
+                    .role(Role.USER)
+                    .build();
+            repository.save(user);
+
+            var jwtToken = jwtService.generateToken(user);
+            return AuthenticationResponse.builder()
+                    .token(jwtToken)
+                    .build();
+
+        } catch (BvnExistsException e) {
+            // Handle BVN already exists exception
+            throw new BvnExistsException("BVN already registered " + e.getMessage());
+        } catch (AlreadyExistsException e) {
+            // Handle email already exists exception
+            throw new AlreadyExistsException("Email already registered " + e.getMessage());
+        } catch (Exception e) {
+            // Handle other exceptions
+            throw new BadRequestException("Registration failed due to unexpected error " + e.getMessage());
         }
-
-        var user = User.builder()
-                .firstname(request.getFirstname())
-                .lastname(request.getLastname())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .stateoforigin(request.getStateoforigin())
-                .bvn(request.getBvn())
-                .role(Role.USER)
-                .build();
-        repository.save(user);
-        var jwtToken = jwtService.generateToken(user);
-        return AuthenticationResponse.builder()
-                .token(jwtToken)
-                .build();
     }
 
     private void validateEmail(String email) {
@@ -85,24 +74,33 @@ public class AuthenticationService {
         }
     }
 
+    private void validateBvn(String bvn) {
+        // BVN must be 11 digits and must be a number
+        if (bvn == null || !isValidBvn(bvn)) {
+            throw new BadRequestException("Error: BVN must be a valid 11-digit number");
+        }
+    }
+
     private void validatePassword(String password) {
+        // Password should contain string, number, and symbols
         if (password.length() < 8) {
-            throw new BadRequestException("Password is too short, should be minimum of 8 characters long");
+            throw new BadRequestException("Password is too short, should be a minimum of 8 characters long");
         }
     }
 
     public AuthenticationResponse registerAdmin(RegisterAdminRequest request) {
         Optional<User> existingUser = repository.findByEmail(request.getEmail());
+
         if (existingUser.isPresent()) {
             throw new AlreadyExistsException("This Email already exists");
         }
 
-        if(!isValidEmail(request.getEmail())){
+        if (!isValidEmail(request.getEmail())) {
             throw new BadRequestException("Error: Email must be valid");
         }
 
-        if(request.getPassword().length() < 8  ){
-            throw new BadRequestException("Password is too short, should be minimum of 8 character long");
+        if (request.getPassword().length() < 8) {
+            throw new BadRequestException("Password is too short, should be a minimum of 8 characters long");
         }
 
         var user = User.builder()
@@ -134,7 +132,6 @@ public class AuthenticationService {
             );
             if (!authentication.isAuthenticated()) {
                 throw new PasswordIncorrect("The password is incorrect ");
-
             }
         } catch (BadCredentialsException e) {
             // Ensure that if an authentication error occurs, it's a password issue, not a user not found issue.
@@ -157,9 +154,15 @@ public class AuthenticationService {
         return email.matches(regex);
     }
 
-
+    private boolean isValidBvn(String bvn) {
+        return bvn.matches("\\d{11}");
+    }
 
     private boolean existsByMail(String email) {
         return repository.existsByEmail(email);
+    }
+
+    private boolean existsByBvn(String bvn) {
+        return repository.existsByBvn(bvn);
     }
 }
