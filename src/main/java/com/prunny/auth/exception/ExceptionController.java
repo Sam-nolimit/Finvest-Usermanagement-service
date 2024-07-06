@@ -25,6 +25,11 @@ public class ExceptionController extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(InvalidOtpException.class)
+    public ResponseEntity<?> InvalidOtpException(InvalidOtpException ex) {
+        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.FORBIDDEN);
+    }
+
     private Map<String, List<String>> getErrorsMap(List<String> errors) {
         Map<String, List<String>> errorResponse = new HashMap<>();
         errorResponse.put("Errors", errors);

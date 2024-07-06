@@ -1,13 +1,11 @@
 package com.prunny.auth.auth;
 
 import com.prunny.auth.exception.AuthenticationFailedException;
+import com.prunny.auth.exception.InvalidOtpException;
 import com.prunny.auth.exception.PasswordIncorrect;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -34,5 +32,29 @@ public class AuthenticationController {
             @RequestBody AuthenticationRequest request
     ) throws PasswordIncorrect, AuthenticationFailedException {
         return ResponseEntity.ok(service.authenticate(request));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(
+            @RequestBody   ForgottenPasswordRequest request
+    ) {
+        service.forgotPassword(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @RequestBody ResetPasswordRequest request
+    ) throws InvalidOtpException {
+        service.resetPassword(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<Void> verifyOtp(
+            @RequestBody VerifyOtpRequest request
+    ) throws InvalidOtpException {
+        service.verifyOtp(request);
+        return ResponseEntity.ok().build();
     }
 }

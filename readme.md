@@ -14,7 +14,7 @@ To run the application locally, follow these steps:
 
 1. **Clone the Repository:**
    ```bash
-   https://github.com/Sam-nolimit/assessment-prunny-java.git
+   https://github.com/Sam-nolimit/Finvest-Usermanagement-service.git
 Save to grepper
 Navigate to the Project Directory:
 
@@ -54,18 +54,3 @@ API documentation is crucial for developers and users to understand how to inter
 
 Error Handling
 Proper error handling is implemented throughout the API. The application returns appropriate HTTP status codes and error messages to indicate the result of each request.
-
-
-SPRING BOOT DEVELOPER PROJECT ASSESSMENT
-
-2. User Authentication and Authorization System
-Project Description: Develop a user authentication and authorization system using Spring
-Boot and Spring Security.
-Requirements:
- Implement user registration and login functionalities.
- Secure endpoints using JWT (JSON Web Token).
- Define roles (e.g., USER, ADMIN) and restrict access to certain endpoints based on
-roles.
- Use a relational database to store user credentials and roles.
- Implement password hashing using BCrypt.
- Create a comprehensive README with setup instructions and API documentation.

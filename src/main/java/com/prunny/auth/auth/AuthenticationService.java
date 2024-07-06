@@ -3,6 +3,7 @@ package com.prunny.auth.auth;
 import com.prunny.auth.exception.*;
 import com.prunny.auth.repository.UserRepository;
 import com.prunny.auth.service.JwtService;
+import com.prunny.auth.service.OtpService;
 import com.prunny.auth.user.Role;
 import com.prunny.auth.user.User;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final OtpService otpService;
 
     public AuthenticationResponse register(RegisterRequest request) {
         try {
@@ -56,35 +58,12 @@ public class AuthenticationService {
                     .token(jwtToken)
                     .build();
 
-        } catch (BvnExistsException e) {
-            // Handle BVN already exists exception
-            throw new BvnExistsException(e.getMessage());
-        } catch (AlreadyExistsException e) {
-            // Handle email already exists exception
-            throw new AlreadyExistsException( e.getMessage());
+        } catch (BvnExistsException | AlreadyExistsException e) {
+            // Handle specific exceptions
+            throw e;
         } catch (Exception e) {
             // Handle other exceptions
-            throw new BadRequestException("Registration failed due to unexpected error " + e.getMessage());
-        }
-    }
-
-    private void validateEmail(String email) {
-        if (email == null || !isValidEmail(email)) {
-            throw new BadRequestException("Error: Email must be valid");
-        }
-    }
-
-    private void validateBvn(String bvn) {
-        // BVN must be 11 digits and must be a number
-        if (bvn == null || !isValidBvn(bvn)) {
-            throw new BadRequestException("Error: BVN must be a valid 11-digit number");
-        }
-    }
-
-    private void validatePassword(String password) {
-        // Password should contain string, number, and symbols
-        if (password.length() < 8) {
-            throw new BadRequestException("Password is too short, should be a minimum of 8 characters long");
+            throw new BadRequestException("Registration failed due to unexpected error: " + e.getMessage());
         }
     }
 
@@ -121,15 +100,12 @@ public class AuthenticationService {
                     .token(jwtToken)
                     .build();
 
-        } catch (BvnExistsException e) {
-            // Handle BVN already exists exception
-            throw new BvnExistsException( e.getMessage());
-        } catch (AlreadyExistsException e) {
-            // Handle email already exists exception
-            throw new AlreadyExistsException( e.getMessage());
+        } catch (BvnExistsException | AlreadyExistsException e) {
+            // Handle specific exceptions
+            throw e;
         } catch (Exception e) {
             // Handle other exceptions
-            throw new BadRequestException("Registration failed due to unexpected  " + e.getMessage());
+            throw new BadRequestException("Registration failed due to unexpected error: " + e.getMessage());
         }
     }
 
@@ -145,7 +121,7 @@ public class AuthenticationService {
                     )
             );
             if (!authentication.isAuthenticated()) {
-                throw new PasswordIncorrect("The password is incorrect ");
+                throw new PasswordIncorrect("The password is incorrect");
             }
         } catch (BadCredentialsException e) {
             // Ensure that if an authentication error occurs, it's a password issue, not a user not found issue.
@@ -156,6 +132,62 @@ public class AuthenticationService {
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
+    }
+
+    public void forgotPassword(ForgottenPasswordRequest request) {
+        var user = repository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("This User does not exist"));
+
+        // Generate and send OTP
+        String otp = otpService.generateOtp(user);
+        otpService.sendOtp(user, otp);
+    }
+
+    public void resetPassword(ResetPasswordRequest request) throws InvalidOtpException {
+        var user = repository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("This User does not exist"));
+
+        if (!otpService.verifyOtp(user, request.getOtp())) {
+            throw new InvalidOtpException("The OTP is invalid or expired");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        repository.save(user);
+
+//         Notify the user
+        otpService.sendPasswordResetConfirmation(user.getEmail());
+    }
+
+    public void verifyOtp(VerifyOtpRequest request) throws InvalidOtpException {
+        var user = repository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("This User does not exist"));
+
+        if (!otpService.verifyOtp(user, request.getOtp())) {
+            throw new InvalidOtpException("The OTP is invalid or expired");
+        }
+
+        // OTP verified successfully
+    }
+
+
+    private void validateEmail(String email) {
+        if (email == null || !isValidEmail(email)) {
+            throw new BadRequestException("Error: Email must be valid");
+        }
+    }
+
+    private void validateBvn(String bvn) {
+        // BVN must be 11 digits and must be a number
+        if (bvn == null || !isValidBvn(bvn)) {
+            throw new BadRequestException("Error: BVN must be a valid 11-digit number");
+        }
+    }
+
+    private void validatePassword(String password) {
+        // Password should contain string, number, and symbols
+        if (password.length() < 8) {
+            throw new BadRequestException("Password is too short, should be a minimum of 8 characters long");
+        }
     }
 
     private boolean isValidEmail(String email) {
