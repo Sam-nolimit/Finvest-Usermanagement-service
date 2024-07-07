@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -27,7 +29,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(service.registerAdmin(request));
     }
 
-    @PostMapping("/authenticate")
+    @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> authenticate(
             @RequestBody AuthenticationRequest request
     ) throws PasswordIncorrect, AuthenticationFailedException {
@@ -57,4 +59,15 @@ public class AuthenticationController {
         service.verifyOtp(request);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<AuthenticationResponse> logout(@RequestBody LogoutRequest request) {
+        service.logout(request);
+        return ResponseEntity.ok(AuthenticationResponse.builder()
+                .message("User logged out successfully")
+                .timestamp(LocalDateTime.now())
+                .status("success")
+                .build());
+    }
+
 }

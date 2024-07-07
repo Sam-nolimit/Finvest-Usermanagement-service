@@ -14,7 +14,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +27,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final OtpService otpService;
+    private final Set<String> tokenBlacklist = new HashSet<>();
 
     public AuthenticationResponse register(RegisterRequest request) {
         try {
@@ -131,6 +135,9 @@ public class AuthenticationService {
         var jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
+                .message("User logged in successfully")
+                .timestamp(LocalDateTime.now())
+                .status("success")
                 .build();
     }
 
@@ -169,7 +176,15 @@ public class AuthenticationService {
         // OTP verified successfully
     }
 
+    public void logout(LogoutRequest request) {
+        // Add the token to the blacklist to invalidate it
+        tokenBlacklist.add(request.getToken());
+    }
 
+    public boolean isTokenValid(String token) {
+        // Check if the token is in the blacklist
+        return !tokenBlacklist.contains(token);
+    }
     private void validateEmail(String email) {
         if (email == null || !isValidEmail(email)) {
             throw new BadRequestException("Error: Email must be valid");
