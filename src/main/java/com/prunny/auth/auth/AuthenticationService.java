@@ -2,6 +2,7 @@ package com.prunny.auth.auth;
 
 import com.prunny.auth.exception.*;
 import com.prunny.auth.repository.UserRepository;
+import com.prunny.auth.service.EmailService;
 import com.prunny.auth.service.JwtService;
 import com.prunny.auth.service.OtpService;
 import com.prunny.auth.user.Role;
@@ -13,6 +14,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import javax.mail.MessagingException;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -28,6 +35,9 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final OtpService otpService;
     private final Set<String> tokenBlacklist = new HashSet<>();
+    private final EmailService emailService;
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
 
     public AuthenticationResponse register(RegisterRequest request) {
         try {
@@ -143,10 +153,41 @@ public class AuthenticationService {
             }
         } catch (BadCredentialsException e) {
             // Ensure that if an authentication error occurs, it's a password issue, not a user not found issue.
-            throw new AuthenticationFailedException("The email or password is incorrect");
+            throw new AuthenticationFailedException("The password is incorrect");
         }
 
         var jwtToken = jwtService.generateToken(user);
+
+        try {
+            // Format the current date and time
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+            String formattedDateTime = now.format(formatter);
+
+            // Send login notification email with styling
+            String subject = "MyNextApartment Login Confirmation";
+            String text = String.format(
+                    "<html>" +
+                            "<body style='font-family: Arial, sans-serif; background-color: #f2f2f2; padding: 20px;'>" +
+                            "<div style='max-width: 600px; margin: auto; background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);'>" +
+                            "<h3 style='color: #333333;'>Dear <b>%s %s</b>,</h3>" +
+                            "<p><b><u style='font-size: 16px;'>MYNEXTAPARTMENT LOGIN CONFIRMATION</u></b></p>" +
+                            "<p>Please be informed that your mobile app profile was accessed on %s.</p>" +
+                            "<p>If you did not login on your mobile app profile at the time detailed above, " +
+                            "please call MyNextApartment; our 24-hour interactive contact centre on: +2348161564659, +2348161564659 " +
+                            "or send an email to <a href='mailto:e-fraudteam@mxa.com'>e-fraudteam@mxa.com</a> immediately.</p>" +
+                            "<p>Best regards,<br>My Next Apartment</p>" +
+                            "</div>" +
+                            "</body>" +
+                            "</html>",
+                    user.getFirstname(), user.getLastname(), formattedDateTime
+            );
+            emailService.sendLoginNotification(user.getEmail(), subject, text);
+        } catch (MessagingException | jakarta.mail.MessagingException e) {
+            logger.error("Failed to send login notification email to {}", user.getEmail(), e);
+            throw new AuthenticationFailedException("Login succeeded, but failed to send email notification");
+        }
+
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .message("User logged in successfully")

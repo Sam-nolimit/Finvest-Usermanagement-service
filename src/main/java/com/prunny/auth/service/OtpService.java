@@ -26,7 +26,7 @@ public class OtpService {
 
     public void sendOtp(User user, String otp) {
         // Print OTP to console
-        System.out.println("Sending OTP to " + user.getEmail() + ": " + otp);
+//        System.out.println("Sending OTP to " + user.getEmail() + ": " + otp);
 
         // Send OTP via email
         SimpleMailMessage message = new SimpleMailMessage();

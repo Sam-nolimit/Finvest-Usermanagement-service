@@ -1,0 +1,29 @@
+package com.prunny.auth.service;
+
+import jakarta.mail.internet.MimeMessage;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+
+import javax.mail.MessagingException;
+
+
+@Service
+public class EmailService {
+    @Autowired
+    private JavaMailSender emailSender;
+
+    public void sendLoginNotification(String to, String subject, String text) throws MessagingException, jakarta.mail.MessagingException {
+        MimeMessage message = emailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(text, true); // Set to true to send HTML content
+
+        emailSender.send(message);
+    }
+}
+
+
