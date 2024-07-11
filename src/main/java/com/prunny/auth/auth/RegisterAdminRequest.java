@@ -14,6 +14,7 @@ public class RegisterAdminRequest {
     private String lastname;
     private String email;
     private String password;
+    private String phoneNumber;
     private String stateoforigin;
     private String bvn;
 }

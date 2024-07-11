@@ -34,16 +34,22 @@ public class AuthenticationService {
             validateEmail(request.getEmail());
             validatePassword(request.getPassword());
             validateBvn(request.getBvn());
+            validateBvn(request.getPhoneNumber());
 
             Optional<User> existingUser = repository.findByEmail(request.getEmail());
             Optional<User> existingBvn = repository.findByBvn(request.getBvn());
+            Optional<User> existingPhoneNumber= repository.findByPhoneNumber(request.getPhoneNumber());
+
+            if (existingUser.isPresent()) {
+                throw new AlreadyExistsException("This Email already exists");
+            }
 
             if (existingBvn.isPresent()) {
                 throw new BvnExistsException("This BVN already exists");
             }
 
-            if (existingUser.isPresent()) {
-                throw new AlreadyExistsException("This Email already exists");
+            if (existingPhoneNumber.isPresent()) {
+                throw new BvnExistsException("This Phone Number already exists");
             }
 
             var user = User.builder()
@@ -53,6 +59,7 @@ public class AuthenticationService {
                     .password(passwordEncoder.encode(request.getPassword()))
                     .stateoforigin(request.getStateoforigin())
                     .bvn(request.getBvn())
+                    .phoneNumber(request.getPhoneNumber())
                     .role(Role.USER)
                     .build();
             repository.save(user);
@@ -76,16 +83,22 @@ public class AuthenticationService {
             validateEmail(request.getEmail());
             validatePassword(request.getPassword());
             validateBvn(request.getBvn());
+            validateBvn(request.getPhoneNumber());
 
             Optional<User> existingUser = repository.findByEmail(request.getEmail());
             Optional<User> existingBvn = repository.findByBvn(request.getBvn());
+            Optional<User> existingPhoneNumber= repository.findByPhoneNumber(request.getPhoneNumber());
+
+            if (existingUser.isPresent()) {
+                throw new AlreadyExistsException("This Email already exists");
+            }
 
             if (existingBvn.isPresent()) {
                 throw new BvnExistsException("This BVN already exists");
             }
 
-            if (existingUser.isPresent()) {
-                throw new AlreadyExistsException("This Email already exists");
+            if (existingPhoneNumber.isPresent()) {
+                throw new BvnExistsException("This Phone Number already exists");
             }
 
             var user = User.builder()
@@ -95,6 +108,7 @@ public class AuthenticationService {
                     .password(passwordEncoder.encode(request.getPassword()))
                     .stateoforigin(request.getStateoforigin())
                     .bvn(request.getBvn())
+                    .phoneNumber(request.getPhoneNumber())
                     .role(Role.ADMIN)
                     .build();
             repository.save(user);
@@ -219,11 +233,15 @@ public class AuthenticationService {
         return bvn.matches("\\d{11}");
     }
 
-    private boolean existsByMail(String email) {
+    private boolean existsByEmail(String email) {
         return repository.existsByEmail(email);
     }
 
     private boolean existsByBvn(String bvn) {
         return repository.existsByBvn(bvn);
+    }
+
+    private boolean existsByPhoneNumber(String bvn) {
+        return repository.existsByPhoneNumber(bvn);
     }
 }
