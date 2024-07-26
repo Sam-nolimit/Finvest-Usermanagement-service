@@ -1,6 +1,6 @@
 package com.prunny.auth.service;
 
-import com.prunny.auth.user.User;
+import com.prunny.auth.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;

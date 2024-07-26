@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class BvnExistsException extends RuntimeException {
     public BvnExistsException(String message){
         super(message);
+        System.out.println(message+ "    message");
     }
+
 }
 

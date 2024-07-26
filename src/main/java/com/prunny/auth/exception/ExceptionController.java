@@ -1,34 +1,27 @@
 package com.prunny.auth.exception;
-
-import com.prunny.auth.dto.ApiResponse;
+import com.prunny.auth.dto.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-@ControllerAdvice
-public class ExceptionController extends ResponseEntityExceptionHandler {
+@RestControllerAdvice
+public class ExceptionController  {
 
-
-    @ExceptionHandler(AlreadyExistsException.class)
-    public ResponseEntity<?> AlreadyExistsException(AlreadyExistsException ex) {
-        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.CONFLICT);
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
+        List<String> errors = ex.getBindingResult().getFieldErrors()
+                .stream().map(FieldError::getDefaultMessage).collect(Collectors.toList());
+        return new ResponseEntity<>(new ApiResponse<>("validation errors",false, errors), HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(BvnExistsException.class)
-    public ResponseEntity<?> BvnExistsException(BvnExistsException ex) {
-        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.CONFLICT);
-    }
-
-    @ExceptionHandler(InvalidOtpException.class)
-    public ResponseEntity<?> InvalidOtpException(InvalidOtpException ex) {
-        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.FORBIDDEN);
-    }
 
     private Map<String, List<String>> getErrorsMap(List<String> errors) {
         Map<String, List<String>> errorResponse = new HashMap<>();
@@ -36,23 +29,130 @@ public class ExceptionController extends ResponseEntityExceptionHandler {
         return errorResponse;
 
     }
-    @ExceptionHandler(PasswordIncorrect.class)
-    public ResponseEntity<?> PasswordIncorrect(PasswordIncorrect ex) {
-        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.FORBIDDEN);
-    }
-
-    @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<?> UsernameNotFoundException(UsernameNotFoundException ex) {
-        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.FORBIDDEN);
-    }
 
     @ExceptionHandler(AuthenticationFailedException.class)
     public ResponseEntity<?> AuthenticationFailedException(AuthenticationFailedException ex) {
         return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(CustomNotFoundException.class)
+    public ResponseEntity<?> ResourceNotFoundException(CustomNotFoundException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(EventNotFoundException.class)
+    public ResponseEntity<?> EventNotFoundException(EventNotFoundException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(UserServiceException.class)
+    public ResponseEntity<?> UserServiceException(UserServiceException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(EventNotRegistered.class)
+    public ResponseEntity<?> EventNotRegistered(EventNotRegistered ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(PhoneNumberExistsException.class)
+    public ResponseEntity<?> PhoneNumberExistsException(PhoneNumberExistsException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(CustomUserAlreadyRegistered.class)
+    public ResponseEntity<?> CustomUserAlreadyRegistered(CustomUserAlreadyRegistered ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(EventAlreadyExpired.class)
+    public ResponseEntity<?> EventAlreadyExpired(EventAlreadyExpired ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.CONFLICT);
+    }
+
+
+
+
+    @ExceptionHandler(UploadFailedException.class)
+    public ResponseEntity<?> UploadFailedException(UploadFailedException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    @ExceptionHandler(EmailSendingException.class)
+    public ResponseEntity<?> EmailSendingException(EmailSendingException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
+    }
+
+
+
+    @ExceptionHandler(UserAlreadyExistException.class)
+    public ResponseEntity<?> UserAlreadyExistException(UserAlreadyExistException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<?> TokenExpiredException(TokenExpiredException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
+    }
+
+
+    @ExceptionHandler(DuplicateDesignationException.class)
+    public ResponseEntity<?> DuplicateDesignationException(DuplicateDesignationException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
+    }
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<?> UsernameNotFoundException(UsernameNotFoundException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
+    }
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<?> BadRequestException(BadRequestException ex) {
-        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.FORBIDDEN);
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(UserPasswordMismatchException.class)
+    public ResponseEntity<?> UserPasswordMismatchException(UserPasswordMismatchException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.BAD_REQUEST);
+    }
+
+
+    @ExceptionHandler(EntityAlreadyExistException.class)
+    public ResponseEntity<?> EntityAlreadyExistException(EntityAlreadyExistException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.CONFLICT);
+    }
+
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> IllegalJwtExceptionHandler(IllegalArgumentException ex) {
+        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> ResourceNotFoundException(ResourceNotFoundException ex) {
+        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.NOT_FOUND);
+    }
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<?> IOException(IOException ex) {
+        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.BAD_REQUEST);
+    }
+
+
+    @ExceptionHandler(UserNotVerifiedException.class)
+    public ResponseEntity<?> UserNotVerifiedException(UserNotVerifiedException ex) {
+        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.UNAUTHORIZED);
+    }
+
+
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<?> EntityNotFoundException(EntityNotFoundException ex) {
+        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.NOT_FOUND);
+    }
+
+
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<?> NotFoundException(NotFoundException ex) {
+        return new ResponseEntity<>(new ApiResponse<>(ex.getMessage(), false), HttpStatus.NOT_FOUND);
+    }
+
+
 }
