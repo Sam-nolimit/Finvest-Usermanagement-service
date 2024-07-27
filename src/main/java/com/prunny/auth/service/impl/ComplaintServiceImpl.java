@@ -31,11 +31,11 @@ public class ComplaintServiceImpl implements ComplaintService {
 
     @Override
     public ComplaintResponse createComplaint(ComplaintRequest complaintRequest) {
+        User tenant = userRepository.findById(complaintRequest.getTenantId())
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+        Property property = propertyRepository.findById(complaintRequest.getPropertyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
         try {
-            User tenant = userRepository.findById(complaintRequest.getTenantId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
-            Property property = propertyRepository.findById(complaintRequest.getPropertyId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
 
             Complaint complaint = Complaint.builder()
                     .tenant(tenant)
@@ -46,8 +46,6 @@ public class ComplaintServiceImpl implements ComplaintService {
 
             complaint = complaintRepository.save(complaint);
             return new ComplaintResponse(complaint);
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to create complaint", e);
         }
@@ -55,14 +53,12 @@ public class ComplaintServiceImpl implements ComplaintService {
 
     @Override
     public List<ComplaintResponse> getComplaintsByTenant(Long tenantId) {
+        User tenant = userRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
         try {
-            User tenant = userRepository.findById(tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             return complaintRepository.findByTenant(tenant).stream()
                     .map(ComplaintResponse::new)
                     .collect(Collectors.toList());
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to get complaints by tenant", e);
         }
@@ -70,14 +66,12 @@ public class ComplaintServiceImpl implements ComplaintService {
 
     @Override
     public List<ComplaintResponse> getComplaintsByProperty(Long propertyId) {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
         try {
-            Property property = propertyRepository.findById(propertyId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
             return complaintRepository.findByProperty(property).stream()
                     .map(ComplaintResponse::new)
                     .collect(Collectors.toList());
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to get complaints by property", e);
         }

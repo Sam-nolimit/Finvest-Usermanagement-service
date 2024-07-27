@@ -4,6 +4,7 @@ import com.prunny.auth.dto.request.*;
 import com.prunny.auth.dto.response.AuthenticationResponse;
 import com.prunny.auth.dto.response.ReviewResponse;
 import com.prunny.auth.dto.response.UserResponse;
+import com.prunny.auth.exception.BadRequestException;
 import com.prunny.auth.exception.InvalidOtpException;
 import com.prunny.auth.exception.ResourceNotFoundException;
 import jakarta.mail.MessagingException;
@@ -20,7 +21,7 @@ public interface UserService {
     UserResponse verifyUser(String email, String otp);
     UserResponse resetPassword(PasswordResetRequest passwordRequest);
     UserResponse editUserDetails(Long userId, UserRequest userUpdateRequest);
-    UserResponse updateUserPassword(Long userId, UpdatePasswordRequest updatePasswordRequest);
+    UserResponse updateUserPassword(Long userId, UpdatePasswordRequest updatePasswordRequest) throws BadRequestException;
     void logout(LogoutRequest request);
     List<UserResponse> getAllUsers();
     UserResponse getUserById(Long id) throws ResourceNotFoundException;

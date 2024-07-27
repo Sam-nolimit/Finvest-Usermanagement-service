@@ -22,9 +22,9 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public ProfileResponse updateProfile(Long userId, ProfileRequest profileRequest) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         try {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
             Profile profile = user.getProfile();
             if (profile == null) {

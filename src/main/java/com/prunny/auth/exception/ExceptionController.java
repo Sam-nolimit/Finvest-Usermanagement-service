@@ -65,6 +65,11 @@ public class ExceptionController  {
         return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.CONFLICT);
     }
 
+
+    @ExceptionHandler(AlreadyExistsException.class)
+    public ResponseEntity<?> AlreadyExistsException(AlreadyExistsException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.CONFLICT);
+    }
     @ExceptionHandler(EventAlreadyExpired.class)
     public ResponseEntity<?> EventAlreadyExpired(EventAlreadyExpired ex) {
         return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.CONFLICT);
@@ -103,6 +108,11 @@ public class ExceptionController  {
     public ResponseEntity<?> UsernameNotFoundException(UsernameNotFoundException ex) {
         return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.NOT_FOUND);
     }
+
+    @ExceptionHandler(BvnExistsException.class)
+    public ResponseEntity<?> BvnExistsException(BvnExistsException ex) {
+        return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.CONFLICT);
+    }
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<?> BadRequestException(BadRequestException ex) {
         return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.BAD_REQUEST);
@@ -112,6 +122,7 @@ public class ExceptionController  {
     public ResponseEntity<?> UserPasswordMismatchException(UserPasswordMismatchException ex) {
         return new ResponseEntity<>(new ApiResponse<>((ex.getMessage()),false), HttpStatus.BAD_REQUEST);
     }
+
 
 
     @ExceptionHandler(EntityAlreadyExistException.class)

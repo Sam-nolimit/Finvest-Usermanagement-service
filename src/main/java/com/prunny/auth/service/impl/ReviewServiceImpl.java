@@ -29,11 +29,11 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public ReviewResponse addReview(Long propertyId, Long tenantId, String comment, int rating) {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
+        User tenant = userRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
         try {
-            Property property = propertyRepository.findById(propertyId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
-            User tenant = userRepository.findById(tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             Review review = new Review();
             review.setProperty(property);
             review.setTenant(tenant);
@@ -50,13 +50,11 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public List<ReviewResponse> getReviewsByProperty(Long propertyId) {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
         try {
-            Property property = propertyRepository.findById(propertyId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
             List<Review> reviews = reviewRepository.findByProperty(property);
             return reviews.stream().map(ReviewResponse::new).collect(Collectors.toList());
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to get reviews by property due to unexpected error", e);
         }
@@ -74,13 +72,11 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public void deleteReviewById(Long reviewId) {
+        if (!reviewRepository.existsById(reviewId)) {
+            throw new ResourceNotFoundException("Review not found");
+        }
         try {
-            if (!reviewRepository.existsById(reviewId)) {
-                throw new ResourceNotFoundException("Review not found");
-            }
             reviewRepository.deleteById(reviewId);
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete review due to unexpected error", e);
         }

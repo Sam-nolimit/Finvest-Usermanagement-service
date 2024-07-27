@@ -3,17 +3,13 @@ import com.prunny.auth.exception.CustomNotFoundException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.CorsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,10 +20,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
-
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 @Configuration
@@ -63,7 +55,8 @@ public class SecurityConfig {
                                         "/api/v1/auth/reset-password",
                                         "/api/v1/auth/verify-otp",
                                         "/api/v1/auth/logout",
-                                        "api/v1/users/resend-verify"
+                                        "api/v1/users/resend-verify",
+                                "/api/v1/auth/verify"
 
 
                                 ).permitAll()
@@ -74,16 +67,11 @@ public class SecurityConfig {
 
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
-        // Disable CORS
-//        http.cors().disable();
-
-        // Configure logout
         http.logout(logout -> {
             logout.logoutUrl("/api/v1/users/logout")
                     .deleteCookies("JSESSIONID")
                     .invalidateHttpSession(true)
                     .logoutSuccessHandler((request, response, authentication) -> {
-                        // You can perform any necessary cleanup or logging here
                         response.setStatus(HttpServletResponse.SC_OK);
                     });
         });

@@ -15,8 +15,8 @@ public interface PropertyService {
     List<PropertyResponse> getAvailableProperties();
     List<PropertyResponse> getAllProperties();
     PropertyResponse getPropertyById(Long propertyId);
-    List<PropertyResponse> getPropertiesByLandlord();
-    List<PropertyResponse> getPropertyByLandlordId(Long landlordId);
+    List<PropertyResponse> getPropertiesByLandlord() throws UnauthorizedException;
+    List<PropertyResponse> getPropertyByLandlordId(Long landlordId) throws UnauthorizedException;
     PropertyResponse updateProperty(Long propertyId, PropertyRequest propertyRequest) throws IOException;
     void deletePropertyById(Long propertyId);
     PropertyResponse approveProperty(Long propertyId) throws UnauthorizedException;

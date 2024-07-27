@@ -30,12 +30,12 @@ public class PaymentTransactionImpl implements PaymentTransactionService {
 
     @Override
     public PaymentTransactionResponse paymentTransaction(PaymentTransactionRequest paymentTransactionRequest) {
-        try {
-            User tenant = userRepository.findById(paymentTransactionRequest.getTenantId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+        User tenant = userRepository.findById(paymentTransactionRequest.getTenantId())
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
-            Property property = propertyRepository.findById(paymentTransactionRequest.getPropertyId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
+        Property property = propertyRepository.findById(paymentTransactionRequest.getPropertyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
+        try {
 
             PaymentTransaction paymentTransaction = new PaymentTransaction();
             paymentTransaction.setUser(tenant);
@@ -59,8 +59,6 @@ public class PaymentTransactionImpl implements PaymentTransactionService {
                     paymentTransaction.getPaymentStatus(),
                     paymentTransaction.getTransactionId()
             );
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to process payment transaction", e);
         }
@@ -68,9 +66,9 @@ public class PaymentTransactionImpl implements PaymentTransactionService {
 
     @Override
     public PaymentTransactionResponse getByTransactionId(String transactionId) {
+        PaymentTransaction paymentTransaction = paymentTransactionRepository.findByTransactionId(transactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
         try {
-            PaymentTransaction paymentTransaction = paymentTransactionRepository.findByTransactionId(transactionId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
             return new PaymentTransactionResponse(
                     paymentTransaction.getId(),
                     paymentTransaction.getProperty().getId(),
@@ -81,8 +79,6 @@ public class PaymentTransactionImpl implements PaymentTransactionService {
                     paymentTransaction.getPaymentStatus(),
                     paymentTransaction.getTransactionId()
             );
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to retrieve payment transaction", e);
         }
@@ -110,9 +106,9 @@ public class PaymentTransactionImpl implements PaymentTransactionService {
 
     @Override
     public List<PaymentTransactionResponse> findByUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         try {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
             List<PaymentTransaction> transactions = paymentTransactionRepository.findByUser(user);
 
@@ -128,8 +124,6 @@ public class PaymentTransactionImpl implements PaymentTransactionService {
                             paymentTransaction.getTransactionId()
                     ))
                     .collect(Collectors.toList());
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to retrieve payment transactions by user", e);
         }
@@ -137,12 +131,10 @@ public class PaymentTransactionImpl implements PaymentTransactionService {
 
     @Override
     public void deleteByTransactionId(String transactionId) {
+        PaymentTransaction paymentTransaction = paymentTransactionRepository.findByTransactionId(transactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
         try {
-            PaymentTransaction paymentTransaction = paymentTransactionRepository.findByTransactionId(transactionId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
             paymentTransactionRepository.delete(paymentTransaction);
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete payment transaction", e);
         }

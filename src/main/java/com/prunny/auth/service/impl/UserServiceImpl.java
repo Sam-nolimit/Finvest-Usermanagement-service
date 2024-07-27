@@ -3,18 +3,18 @@ package com.prunny.auth.service.impl;
 import com.prunny.auth.config.JwtUtil;
 import com.prunny.auth.dto.EmailDetails;
 import com.prunny.auth.dto.request.*;
-import com.prunny.auth.dto.response.AuthenticationResponse;
 import com.prunny.auth.dto.response.UserResponse;
 import com.prunny.auth.enums.Role;
 import com.prunny.auth.exception.*;
+import com.prunny.auth.model.Otp;
 import com.prunny.auth.model.User;
+import com.prunny.auth.repository.OtpRepository;
 import com.prunny.auth.repository.UserRepository;
 import com.prunny.auth.service.EmailService;
 import com.prunny.auth.service.OtpService;
 import com.prunny.auth.service.UserService;
 import com.prunny.auth.utils.AccountUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,8 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.exceptions.TemplateInputException;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,6 +36,7 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OtpRepository otpRepository;
    private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final OtpService otpService;
@@ -48,26 +47,34 @@ public class UserServiceImpl implements UserService {
     private Map<String, String> otpStorage = new HashMap<>();
     @Override
     public UserResponse registerTenant(RegisterRequest request) {
+        validateEmail(request.getEmail());
+        validatePassword(request.getPassword());
+        validateBvn(request.getBvn());
+        validatePhoneNumber(request.getPhonenumber());
+
+        Optional<User> existingBvn = userRepository.findByBvn(request.getBvn());
+        Optional<User> existingPhoneNumber = userRepository.findByPhoneNumber(request.getPhonenumber());
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new UserAlreadyExistException("User with email already exist");
+        }
+
+        if (existingBvn.isPresent()) {
+            throw new BvnExistsException("This BVN already exists");
+        }
+        if (existingPhoneNumber.isPresent()) {
+            throw new PhoneNumberExistsException("This Phone Number already exists");
+        }
+        if (!AccountUtils.validatePassword(request.getPassword(), request.getConfirmPassword())){
+            throw new UserPasswordMismatchException("Password does not match");
+        }
+        if (!isValidEmail(request.getEmail())){
+            throw new BadRequestException("Error: Email must be valid");
+        }
+        if (request.getPassword().length() < 8 || request.getConfirmPassword().length() < 8){
+            throw new BadRequestException("Password is too short, should be a minimum of 8 characters long");
+        }
         try {
-            validateEmail(request.getEmail());
-            validatePassword(request.getPassword());
-            validateBvn(request.getBvn());
-            validatePhoneNumber(request.getPhoneNumber());
-
-            Optional<User> existingBvn = userRepository.findByBvn(request.getBvn());
-            Optional<User> existingPhoneNumber = userRepository.findByPhoneNumber(request.getPhoneNumber());
-
-            if (userRepository.existsByEmail(request.getEmail())) {
-                throw new UserAlreadyExistException("User with email already exist");
-            }
-
-            if (existingBvn.isPresent()) {
-                throw new BvnExistsException("This BVN already exists");
-            }
-
-            if (existingPhoneNumber.isPresent()) {
-                throw new PhoneNumberExistsException("This Phone Number already exists");
-            }
 
             var user = User.builder()
                     .firstName(request.getFirstname())
@@ -76,14 +83,18 @@ public class UserServiceImpl implements UserService {
                     .bvn(request.getBvn())
                     .password(passwordEncoder.encode(request.getPassword()))
                     .stateOfOrigin(request.getStateoforigin())
-                    .phoneNumber(request.getPhoneNumber())
+                    .phoneNumber(request.getPhonenumber())
                     .isVerified(false)
                     .role(Role.TENANT)
                     .build();
             userRepository.save(user);
 
             String otp = otpService.generateOtp(user);
-            otpStorage.put(user.getEmail(), otp);
+            Otp otpEntity = new Otp();
+            otpEntity.setEmail(user.getEmail());
+            otpEntity.setOtp(otp);
+            otpEntity.setCreatedAt(LocalDateTime.now());
+            otpRepository.save(otpEntity);
 
             EmailDetails emailDetails = EmailDetails.builder()
                     .recipient(user.getEmail())
@@ -105,8 +116,7 @@ public class UserServiceImpl implements UserService {
                     .createdAt(user.getCreatedAt())
                     .modifiedAt(user.getModifiedAt())
                     .build();
-        } catch (BvnExistsException | UserAlreadyExistException | PhoneNumberExistsException e) {
-            throw e;
+
         } catch (TemplateInputException e) {
             throw new BadRequestException("Failed to process email template: " + e.getMessage());
         } catch (Exception e) {
@@ -116,34 +126,43 @@ public class UserServiceImpl implements UserService {
 
     @Override
 //    @PreAuthorize("hasRole('ADMIN')")
-    public UserResponse createAdmin(RegisterRequest userRequest) throws jakarta.mail.MessagingException {
-        try {
-            Optional<User> existingPhoneNumber = userRepository.findByPhoneNumber(userRequest.getPhoneNumber());
-            if (userRepository.existsByEmail(userRequest.getEmail())) {
-                throw new UserAlreadyExistException("Email already exists");
-            }
-            if (existingPhoneNumber.isPresent()) {
-                throw new PhoneNumberExistsException("This Phone Number already exists");
-            }
-            if (!AccountUtils.validatePassword(userRequest.getPassword(), userRequest.getConfirmPassword())){
-                throw new UserPasswordMismatchException("Password does not match");
-            }
-            if (existsByEmail(userRequest.getEmail())){
-                throw new BadRequestException("Error: Email is already taken!");
-            }
-            if (!isValidEmail(userRequest.getEmail())){
-                throw new BadRequestException("Error: Email must be valid");
-            }
-            if (userRequest.getPassword().length() < 8 || userRequest.getConfirmPassword().length() < 8){
-                throw new BadRequestException("Password is too short, should be a minimum of 8 characters long");
-            }
+    public UserResponse createAdmin(RegisterRequest userRequest)  {
+        validateEmail(userRequest.getEmail());
+        validatePassword(userRequest.getPassword());
+        validateBvn(userRequest.getBvn());
+        validatePhoneNumber(userRequest.getPhonenumber());
 
+        Optional<User> existingBvn = userRepository.findByBvn(userRequest.getBvn());
+        Optional<User> existingPhoneNumber = userRepository.findByPhoneNumber(userRequest.getPhonenumber());
+
+        if (userRepository.existsByEmail(userRequest.getEmail())) {
+            throw new UserAlreadyExistException("User with email already exist");
+        }
+
+        if (existingBvn.isPresent()) {
+            throw new BvnExistsException("This BVN already exists");
+        }
+
+        if (existingPhoneNumber.isPresent()) {
+            throw new PhoneNumberExistsException("This Phone Number already exists");
+        }
+        if (!AccountUtils.validatePassword(userRequest.getPassword(), userRequest.getConfirmPassword())){
+            throw new UserPasswordMismatchException("Password does not match");
+        }
+        if (!isValidEmail(userRequest.getEmail())){
+            throw new BadRequestException("Error: Email must be valid");
+        }
+        if (userRequest.getPassword().length() < 8 || userRequest.getConfirmPassword().length() < 8){
+            throw new BadRequestException("Password is too short, should be a minimum of 8 characters long");
+        }
+
+        try {
 
             User newAdmin = User.builder()
                     .firstName(userRequest.getFirstname())
                     .lastName(userRequest.getLastname())
                     .email(userRequest.getEmail())
-                    .phoneNumber(userRequest.getPhoneNumber())
+                    .phoneNumber(userRequest.getPhonenumber())
                     .bvn(userRequest.getBvn())
                     .stateOfOrigin(userRequest.getStateoforigin())
                     .password(passwordEncoder.encode(userRequest.getPassword()))
@@ -182,33 +201,41 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse createLandlord(RegisterRequest userRequest) throws jakarta.mail.MessagingException {
-        try {
-            Optional<User> existingPhoneNumber = userRepository.findByPhoneNumber(userRequest.getPhoneNumber());
-            if (userRepository.existsByEmail(userRequest.getEmail())) {
-                throw new UserAlreadyExistException("Email already exists");
-            }
-            if (existingPhoneNumber.isPresent()) {
-                throw new PhoneNumberExistsException("This Phone Number already exists");
-            }
-            if (!AccountUtils.validatePassword(userRequest.getPassword(), userRequest.getConfirmPassword())){
-                throw new UserPasswordMismatchException("Password does not match");
-            }
-            if (existsByEmail(userRequest.getEmail())){
-                throw new BadRequestException("Error: Email is already taken!");
-            }
-            if (!isValidEmail(userRequest.getEmail())){
-                throw new BadRequestException("Error: Email must be valid");
-            }
-            if (userRequest.getPassword().length() < 8 || userRequest.getConfirmPassword().length() < 8){
-                throw new BadRequestException("Password is too short, should be a minimum of 8 characters long");
-            }
+    public UserResponse createLandlord(RegisterRequest userRequest)  {
+        validateEmail(userRequest.getEmail());
+        validatePassword(userRequest.getPassword());
+        validateBvn(userRequest.getBvn());
+        validatePhoneNumber(userRequest.getPhonenumber());
+        Optional<User> existingBvn = userRepository.findByBvn(userRequest.getBvn());
+        Optional<User> existingPhoneNumber = userRepository.findByPhoneNumber(userRequest.getPhonenumber());
 
+        if (userRepository.existsByEmail(userRequest.getEmail())) {
+            throw new UserAlreadyExistException("User with email already exist");
+        }
+
+        if (existingBvn.isPresent()) {
+            throw new BvnExistsException("This BVN already exists");
+        }
+
+        if (existingPhoneNumber.isPresent()) {
+            throw new PhoneNumberExistsException("This Phone Number already exists");
+        }
+        if (!AccountUtils.validatePassword(userRequest.getPassword(), userRequest.getConfirmPassword())){
+            throw new UserPasswordMismatchException("Password does not match");
+        }
+        if (!isValidEmail(userRequest.getEmail())){
+            throw new BadRequestException("Error: Email must be valid");
+        }
+        if (userRequest.getPassword().length() < 8 || userRequest.getConfirmPassword().length() < 8){
+            throw new BadRequestException("Password is too short, should be a minimum of 8 characters long");
+        }
+
+        try {
             User newLandlord = User.builder()
                     .firstName(userRequest.getFirstname())
                     .lastName(userRequest.getLastname())
                     .email(userRequest.getEmail())
-                    .phoneNumber(userRequest.getPhoneNumber())
+                    .phoneNumber(userRequest.getPhonenumber())
                     .bvn(userRequest.getBvn())
                     .stateOfOrigin(userRequest.getStateoforigin())
                     .password(passwordEncoder.encode(userRequest.getPassword()))
@@ -239,21 +266,29 @@ public class UserServiceImpl implements UserService {
                     .createdAt(savedAdmin.getCreatedAt())
                     .modifiedAt(savedAdmin.getModifiedAt())
                     .build();
-        } catch (BvnExistsException | UserAlreadyExistException | PhoneNumberExistsException e) {
-                throw e;
                 } catch (TemplateInputException e) {
                 throw new BadRequestException("Failed to process email template: " + e.getMessage());
                 } catch (Exception e) {
                 throw new BadRequestException("Registration failed due to unexpected error: " + e.getMessage());
                 }
                 }
-@Override
+    @Override
+    @Transactional
     public UserResponse verifyUser(String email, String otp) {
-        if (otpStorage.containsKey(email) && otpStorage.get(email).equals(otp)) {
-            User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        Otp otpEntity = otpRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("Invalid OTP"));
+
+        if (!otpEntity.getOtp().equals(otp)) {
+            throw new BadRequestException("Invalid OTP");
+        }
+
+        try {
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
             user.setIsVerified(true);
             userRepository.save(user);
-            otpStorage.remove(email);
+            otpRepository.deleteByEmail(email);
 
             return UserResponse.builder()
                     .id(user.getId())
@@ -266,10 +301,14 @@ public class UserServiceImpl implements UserService {
                     .createdAt(user.getCreatedAt())
                     .modifiedAt(user.getModifiedAt())
                     .build();
-        } else {
-            throw new BadRequestException("Invalid OTP");
+
+        } catch (UsernameNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to verify user due to unexpected error: " + e.getMessage());
         }
     }
+
     @Override
     public LoginResponse loginUser(LoginRequest loginRequest) {
         try {
@@ -307,13 +346,18 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse forgotPassword(ForgotPasswordRequest forgotPasswordRequest) {
         Optional<User> userOptional = userRepository.findByEmail(forgotPasswordRequest.getEmail());
-        if (!userOptional.isPresent()) {
+        if (userOptional.isEmpty()) {
             throw new CustomNotFoundException("User with provided Email not found");
         }
 
         User user = userOptional.get();
         String otp = otpService.generateOtp(user);
-        otpStorage.put(user.getEmail(), otp);
+
+        Otp otpEntity = new Otp();
+        otpEntity.setEmail(user.getEmail());
+        otpEntity.setOtp(otp);
+        otpEntity.setCreatedAt(LocalDateTime.now());
+        otpRepository.save(otpEntity);
 
         Map<String, Object> model = new HashMap<>();
         model.put("otp", otp);
@@ -345,16 +389,18 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse resetPassword(PasswordResetRequest passwordRequest) {
         if (!passwordRequest.getNewPassword().equals(passwordRequest.getConfirmPassword())) {
-            throw new CustomNotFoundException("Password do not match");
+            throw new CustomNotFoundException("Passwords do not match");
         }
 
-        String email = passwordRequest.getEmail();
+        Otp otpEntity = otpRepository.findByEmail(passwordRequest.getEmail())
+                .orElseThrow(() -> new BadRequestException("Token not found"));
+        System.out.println(otpEntity);
 
-        if (!otpStorage.containsKey(email) || !otpStorage.get(email).equals(passwordRequest.getOtp())) {
+        if (!otpEntity.getOtp().equals(passwordRequest.getOtp())) {
             throw new BadRequestException("Invalid OTP");
         }
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(passwordRequest.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         if (passwordRequest.getNewPassword().length() < 8 || passwordRequest.getConfirmPassword().length() < 8) {
@@ -363,8 +409,7 @@ public class UserServiceImpl implements UserService {
 
         user.setPassword(passwordEncoder.encode(passwordRequest.getNewPassword()));
         userRepository.save(user);
-        otpStorage.remove(email);
-
+        otpRepository.deleteByEmail(passwordRequest.getEmail());
         return  UserResponse.builder()
                 .id(user.getId())
                 .isVerified(user.getIsVerified())
@@ -402,7 +447,7 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public UserResponse updateUserPassword(Long userId, UpdatePasswordRequest updatePasswordRequest) {
+    public UserResponse updateUserPassword(Long userId, UpdatePasswordRequest updatePasswordRequest) throws BadRequestException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomNotFoundException("User not found"));
 
@@ -518,11 +563,12 @@ public class UserServiceImpl implements UserService {
     }
 
     private boolean isValidPhoneNumber(String phoneNumber) {
-        return phoneNumber.matches("\\d{11}");
+        System.out.println(phoneNumber);
+        return phoneNumber != null && phoneNumber.matches("^\\d{11}$");
     }
 
     private boolean isValidBvn(String bvn) {
-        return bvn.matches("\\d{11}");
+        return bvn.matches("^\\d{11}$");
     }
 
     private boolean existsByEmail(String email) {

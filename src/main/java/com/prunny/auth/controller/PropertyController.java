@@ -66,13 +66,13 @@ public class PropertyController {
     }
 
     @GetMapping("/land-lord")
-    public ResponseEntity<List<PropertyResponse>> getPropertiesByLandlord() {
+    public ResponseEntity<List<PropertyResponse>> getPropertiesByLandlord() throws UnauthorizedException {
         List<PropertyResponse> propertyResponse = propertyService.getPropertiesByLandlord();
         return ResponseEntity.ok(propertyResponse);
     }
 
     @GetMapping("/land-lord/{landlordId}")
-    public ResponseEntity<List<PropertyResponse>> getPropertyByLandlordId(@PathVariable Long landlordId) {
+    public ResponseEntity<List<PropertyResponse>> getPropertyByLandlordId(@PathVariable Long landlordId) throws UnauthorizedException {
         List<PropertyResponse> propertyResponse = propertyService.getPropertyByLandlordId(landlordId);
         return ResponseEntity.ok(propertyResponse);
     }

@@ -42,6 +42,11 @@ public class UserController {
     ) throws MessagingException {
         return ResponseEntity.ok(service.createLandlord(request));
     }
+    @PostMapping("/verify")
+    public ResponseEntity<UserResponse> verifyUser(@RequestBody VerifyOtpRequest request) {
+        UserResponse response = service.verifyUser(request.getEmail(), request.getOtp());
+        return ResponseEntity.ok(response);
+    }
 
 
     @PostMapping("/login")
@@ -62,7 +67,7 @@ public class UserController {
     @PostMapping("/reset-password")
     public ResponseEntity<Void> resetPassword(
             @RequestBody PasswordResetRequest request
-    ) throws InvalidOtpException {
+    )   {
         service.resetPassword(request);
         return ResponseEntity.ok().build();
     }
@@ -78,7 +83,7 @@ public class UserController {
                 .build());
     }
 
-    @GetMapping
+    @GetMapping("/users")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         List<UserResponse> users = service.getAllUsers();
         return ResponseEntity.ok(users);
@@ -99,7 +104,7 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
-    @PutMapping("/{id}/change-password")
+    @PutMapping("/change-password/{id}")
     public ResponseEntity<Void> updateUserPassword(
             @PathVariable Long id,
             @RequestBody UpdatePasswordRequest request
@@ -108,7 +113,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/user/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         service.deleteUser(id);
         return ResponseEntity.noContent().build();

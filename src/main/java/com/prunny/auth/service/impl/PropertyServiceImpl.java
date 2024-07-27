@@ -95,24 +95,21 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public PropertyResponse approveProperty(Long propertyId) throws UnauthorizedException {
+        String email = securityConfig.getAuthenticatedUserEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getRole() != Role.ADMIN) {
+            throw new UnauthorizedException("User is not authorized to approve the property");
+        }
+
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
         try {
-            String email = securityConfig.getAuthenticatedUserEmail();
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-            if (user.getRole() != Role.ADMIN) {
-                throw new UnauthorizedException("User is not authorized to approve the property");
-            }
-
-            Property property = propertyRepository.findById(propertyId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
-
             property.setApproved(true);
             propertyRepository.save(property);
 
             return new PropertyResponse(property);
-        } catch (ResourceNotFoundException | UnauthorizedException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to approve property due to unexpected error", e);
         }
@@ -121,14 +118,12 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public PropertyResponse updateAvailability(Long propertyId, boolean isAvailable) {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
         try {
-            Property property = propertyRepository.findById(propertyId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
             property.setAvailable(isAvailable);
             property = propertyRepository.save(property);
             return new PropertyResponse(property);
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to update property availability due to unexpected error", e);
         }
@@ -156,63 +151,53 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public PropertyResponse getPropertyById(Long propertyId) {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
         try {
-            Property property = propertyRepository.findById(propertyId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
             return new PropertyResponse(property);
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch property due to unexpected error", e);
         }
     }
 
     @Override
-    public List<PropertyResponse> getPropertyByLandlordId(Long landlordId) {
-        try {
-            User user = userRepository.findById(landlordId)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    public List<PropertyResponse> getPropertyByLandlordId(Long landlordId) throws UnauthorizedException {
+        User user = userRepository.findById(landlordId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-            if (user.getRole() != Role.ADMIN && user.getRole() != Role.LANDLORD) {
-                throw new UnauthorizedException("User is not authorized to see  properties");
-            }
+        if (user.getRole() != Role.ADMIN && user.getRole() != Role.LANDLORD) {
+            throw new UnauthorizedException("User is not authorized to see  properties");
+        }
+        try {
             List<Property> properties = propertyRepository.findByLandlord(user);
             return properties.stream().map(PropertyResponse::new).collect(Collectors.toList());
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch property due to unexpected error", e);
-        } catch (UnauthorizedException e) {
-            throw new RuntimeException(e);
-        }
-    }
+
+    }}
 
 
     @Override
-    public List<PropertyResponse> getPropertiesByLandlord() {
-        try {
-            String email = SecurityConfig.getAuthenticatedUserEmail();
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    public List<PropertyResponse> getPropertiesByLandlord() throws UnauthorizedException {
+        String email = SecurityConfig.getAuthenticatedUserEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-            if (user.getRole() != Role.ADMIN && user.getRole() != Role.LANDLORD) {
-                throw new UnauthorizedException("User is not authorized to see  properties");
-            }
+        if (user.getRole() != Role.ADMIN && user.getRole() != Role.LANDLORD) {
+            throw new UnauthorizedException("User is not authorized to see  properties");
+        }
+        try {
             List<Property> properties = propertyRepository.findByLandlord(user);
             return properties.stream().map(PropertyResponse::new).collect(Collectors.toList());
         } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch properties by landlord due to unexpected error", e);
-        } catch (UnauthorizedException e) {
-            throw new RuntimeException(e);
-        }
+            throw new RuntimeException("Failed to fetch properties by landlord due to unexpected error", e);}
     }
 
     @Override
     public PropertyResponse updateProperty(Long propertyId, PropertyRequest propertyRequest)  {
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
         try {
-            Property property = propertyRepository.findById(propertyId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
-
             if (propertyRequest.getFile() != null && !propertyRequest.getFile().isEmpty()) {
                 Map<?, ?> uploadResult = cloudinary.uploader().upload(propertyRequest.getFile().getBytes(), ObjectUtils.emptyMap());
                 String imageUrl = (String) uploadResult.get("secure_url");
@@ -229,8 +214,6 @@ public class PropertyServiceImpl implements PropertyService {
             property = propertyRepository.save(property);
 
             return new PropertyResponse(property);
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to update property due to unexpected error", e);
         }
@@ -238,13 +221,11 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public void deletePropertyById(Long propertyId) {
+        if (!propertyRepository.existsById(propertyId)) {
+            throw new ResourceNotFoundException("Property not found");
+        }
         try {
-            if (!propertyRepository.existsById(propertyId)) {
-                throw new ResourceNotFoundException("Property not found");
-            }
             propertyRepository.deleteById(propertyId);
-        } catch (ResourceNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete property due to unexpected error", e);
         }

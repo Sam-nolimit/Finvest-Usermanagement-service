@@ -32,16 +32,16 @@ public class SaveServiceImpl implements SaveService {
 
     @Override
     public Save saveProperty(Long propertyId) {
+        String email = SecurityConfig.getAuthenticatedUserEmail();
+        Optional<User> user = userRepository.findByEmail(email);
+        if (!user.isPresent()) {
+            throw new ResourceNotFoundException("User not found");
+        }
+        Optional<Property> property = propertyRepository.findById(propertyId);
+        if (!property.isPresent()) {
+            throw new ResourceNotFoundException("Property not found");
+        }
         try {
-            String email = SecurityConfig.getAuthenticatedUserEmail();
-            Optional<User> user = userRepository.findByEmail(email);
-            if (!user.isPresent()) {
-                throw new ResourceNotFoundException("User not found");
-            }
-            Optional<Property> property = propertyRepository.findById(propertyId);
-            if (!property.isPresent()) {
-                throw new ResourceNotFoundException("Property not found");
-            }
             if (!saveRepository.existsByUserAndProperty(user.get(), property.get())) {
                 Save save = new Save();
                 save.setUser(user.get());
@@ -59,11 +59,10 @@ public class SaveServiceImpl implements SaveService {
     @Override
     @Transactional
     public void unSaveProperty(Long propertyId) {
+        String email = SecurityConfig.getAuthenticatedUserEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         try {
-            String email = SecurityConfig.getAuthenticatedUserEmail();
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
             saveRepository.deleteByUserIdAndPropertyId(user.getId(), propertyId);
         } catch (Exception e) {
             throw new RuntimeException("Failed to unsave property due to unexpected error", e);
@@ -81,10 +80,10 @@ public class SaveServiceImpl implements SaveService {
 
     @Override
     public List<Save> getSavedPropertiesByUser() {
+        String email = SecurityConfig.getAuthenticatedUserEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         try {
-            String email = SecurityConfig.getAuthenticatedUserEmail();
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
             return saveRepository.findByUserId(user.getId());
         } catch (Exception e) {
             throw new RuntimeException("Failed to get saved properties by user due to unexpected error", e);
